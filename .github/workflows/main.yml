@@ -1,0 +1,47 @@
+name: Setup RDP with ngrok
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-rdp:
+    runs-on: self-hosted # You need to use a self-hosted runner for this
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up RDP
+      run: |
+        # Commands to set up RDP on your self-hosted runner
+        echo "Setting up RDP..."
+
+    - name: Install ngrok
+      run: |
+        # Commands to install ngrok on your self-hosted runner
+        curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+        echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+        sudo apt update
+        sudo apt install ngrok
+
+    - name: Authenticate ngrok
+      env:
+        NGROK_AUTH_TOKEN: 30uRHNctHOB49qTaXJrPdjVb4aq_7dKNs7zAsLKJGzhfm14Pb
+      run: |
+        ngrok authtoken $NGROK_AUTH_TOKEN
+
+    - name: Start ngrok tunnel
+      run: |
+        ngrok tcp 3389 & # Assuming RDP is running on port 3389
+        sleep 10 # Give ngrok some time to start
+        curl -s http://localhost:4040/api/tunnels | python3 -c "import sys, json; print(json.load(sys.stdin)['tunnels'][0]['public_url'])"
+
+    - name: Display connection info
+      env:
+        RDP_USERNAME: administrator
+        RDP_PASSWORD: Darkboy
+      run: |
+        echo "RDP Host: localhost"
+        echo "RDP Port: 3389"
+        echo "RDP Username: $RDP_USERNAME"
+        echo "RDP Password: $RDP_PASSWORD"
